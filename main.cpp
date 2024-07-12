@@ -86,12 +86,37 @@ public:
 	}
 };
 
+struct Sine {
+	float period;
+	float phase;
+};
+
+class Mountain {
+	std::vector<Sine> sines;
+
+public:
+	void add_sine(float period=1, float phase=0) {
+		sines.push_back({ period, phase });
+	}
+
+	float get(float x) {
+		/*Sums all sines and returns value between(0, 1)*/
+		float value = 0;
+		for (int i = 0; i < sines.size(); i++) {
+			value += sinf(sines[i].period * x + sines[i].phase);
+		}
+		
+		return 1 / (1 + exp(-value));
+	}
+};
+
 // Override base class with your custom functionality
 class Game : public olc::PixelGameEngine
 {
 private:
 	Car car;
 	Track track;
+	Mountain mountain;
 
 public:
 	Game()
@@ -110,6 +135,10 @@ public:
 		track.add_segment(200, 1.0f);
 		track.add_segment(200, 0);
 		track.add_segment(200, -1.0f);
+
+		mountain.add_sine(0.5f);
+		mountain.add_sine(2);
+		mountain.add_sine(4);
 
 		return true;
 	}
@@ -148,7 +177,25 @@ public:
 		track.display_curvature += curvature_diff;
 		track.game_curvature += track.display_curvature * fElapsedTime * car.speed;
 
+		// Draw Sky
+		for (int x = 0; x < ScreenWidth(); x++) {
+			for (int y = 0; y < ScreenHeight() / 4; y++) {
+				Draw(olc::vi2d(x, y), olc::DARK_BLUE);
+			}
+		}
 
+		// Draw Mountains
+		for (int x = 0; x < ScreenWidth(); x++) {
+			float h = mountain.get(x * 0.01f + track.game_curvature*5.0f) - 0.1f;
+			h *= ScreenHeight() / 4;
+			for (int y = ScreenHeight() / 4; y < ScreenHeight() / 2; y++) {
+				olc::Pixel color = (ScreenHeight()/2 - y) > h ? olc::BLUE : olc::DARK_RED;
+				Draw(olc::vi2d(x, y), color);
+			}
+		}
+
+
+		// Draw Track
 		for (int y = ScreenHeight() / 2; y < ScreenHeight(); y++) {
 			float perspective = (y - (float)ScreenHeight() / 2.0f) / ((float)ScreenHeight() / 2.0f);
 			
@@ -200,10 +247,22 @@ public:
 		}
 
 		
-		int car_pos = ScreenWidth() / 2 + (car.acc_curvature - track.game_curvature) * ScreenWidth() / 2 - car.formula_straight.get()->width/2;
+
+		olc::Sprite* sprite;
+		if (GetKey(olc::A).bHeld)
+			sprite = car.formula_left.get();
+		else if (GetKey(olc::D).bHeld)
+			sprite = car.formula_right.get();
+		else
+			sprite = car.formula_straight.get();
+
+		int car_pos = ScreenWidth() / 2 + (car.acc_curvature - track.game_curvature) * ScreenWidth() / 2 - sprite->width / 2;
 		SetPixelMode(olc::Pixel::Mode::MASK);
-		DrawSprite(olc::vi2d(car_pos, 400), car.formula_straight.get());
+		DrawSprite(olc::vi2d(car_pos, ScreenHeight() - sprite->height - 25), sprite);
 		SetPixelMode(olc::Pixel::Mode::NORMAL);
+
+		std::string str = std::format("Distance travelled: {}\nCar cuvature: {}\nTrack curvature: {}", car.travelled, car.acc_curvature, track.game_curvature);
+		DrawString(olc::vi2d(0, 0), str);
 
 		return true;
 	}
