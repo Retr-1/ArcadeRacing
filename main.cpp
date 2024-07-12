@@ -176,10 +176,15 @@ public:
 		Car::load_sprites();
 
 		//track.add_segment(100, 0);
-		//track.add_segment(200, 1.0f);
+		track.add_segment(200, 1.0f);
 		track.add_segment(200, 0);
-		//track.add_segment(200, -1.0f);
-		track.add_segment(50, 0);
+		track.add_segment(100, -1.0f);
+		//track.add_segment(120, -0.6f);
+		//track.add_segment(100, 0.0f);
+		//track.add_segment(30, 0.2f);
+		//track.add_segment(100, 0.8f);
+		//track.add_segment(50, 0.0f);
+		//track.add_segment(50, 0);
 		//track.add_segment(10, 0);
 
 		mountain.add_sine(0.5f);
@@ -202,7 +207,7 @@ public:
 			car.speed += 2.0f * fElapsedTime;
 		}
 
-		if (abs(car.acc_curvature - track.game_curvature) > 0.8f) {
+		if (abs(car.acc_curvature - track.game_curvature) > 0.7f) {
 			car.speed -= 5.0f * fElapsedTime;
 		}
 		else {
