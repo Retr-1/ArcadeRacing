@@ -95,6 +95,10 @@ public:
 		}
 		return false;
 	}
+
+	bool is_last_segment() {
+		return current_seg == segments.size() - 1;
+	}
 };
 
 class LapManager {
@@ -172,9 +176,10 @@ public:
 		Car::load_sprites();
 
 		//track.add_segment(100, 0);
-		track.add_segment(200, 1.0f);
+		//track.add_segment(200, 1.0f);
 		track.add_segment(200, 0);
-		track.add_segment(200, -1.0f);
+		//track.add_segment(200, -1.0f);
+		track.add_segment(50, 0);
 		//track.add_segment(10, 0);
 
 		mountain.add_sine(0.5f);
@@ -291,7 +296,23 @@ public:
 					color = alternator_edge > 0 ? olc::WHITE : olc::RED;
 				}
 				else if (x < p3) {
-					color = olc::GREY;
+					if (track.is_last_segment()) {
+						float podiel = (car.travelled-track.seg_sum) / track.segments[track.current_seg].length;
+						float delta = perspective*0.3;//pow(perspective, 3);
+						if (perspective - delta < podiel && perspective > podiel) {
+							float r = sinf(x * 0.3f) * sinf(y * 0.3f - car.travelled);
+							color = r < 0 ? olc::GREY : olc::BLACK;
+							//unsigned r = (unsigned) (x * 0.1 - y * 0.1 + car.travelled * 0.1) % 2;
+							//color = r == 0 ? olc::GREY : olc::BLACK;
+						}
+						else {
+							color = olc::GREY;
+						}
+						//unsigned r = (x + y + (unsigned)car.travelled) % 2;
+					}
+					else {
+						color = olc::GREY;
+					}
 				}
 				else if (x < p4) {
 					color = alternator_edge > 0 ? olc::WHITE : olc::RED;
