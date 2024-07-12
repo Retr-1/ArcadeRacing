@@ -53,6 +53,8 @@ struct Segment {
 };
 
 class Track {
+private:
+	bool lap_end = false;
 public:
 	std::vector<Segment> segments;
 	int current_seg = 0;
@@ -80,9 +82,45 @@ public:
 			if (current_seg == segments.size()) {
 				current_seg = 0;
 				//seg_sum = 0;
+				lap_end = true;
 			}
 			return segments[current_seg].curvature;
 		}
+	}
+
+	bool ended_lap() {
+		if (lap_end) {
+			lap_end = false;
+			return true;
+		}
+		return false;
+	}
+};
+
+class LapManager {
+public:
+	float laps[5] = {};
+	int current_lap = 0;
+	float total_time = 0;
+
+	std::string str() {
+		std::string result = "";
+		for (int i = 0; i < 5; i++) {
+			if (i < current_lap) {
+				result += std::to_string(i+1) + ". " + std::to_string(laps[i]) + '\n';
+			}
+			else if (i == current_lap) {
+				result += std::to_string(i + 1) + ". " + std::to_string(total_time) + '\n';
+			}
+			else {
+				result += std::to_string(i + 1) + ". " + "---\n";
+			}
+		}
+		return result;
+	}
+
+	void set() {
+		laps[current_lap++] = total_time;
 	}
 };
 
@@ -117,6 +155,8 @@ private:
 	Car car;
 	Track track;
 	Mountain mountain;
+	LapManager lapManager;
+	bool gameover = false;
 
 public:
 	Game()
@@ -135,6 +175,7 @@ public:
 		track.add_segment(200, 1.0f);
 		track.add_segment(200, 0);
 		track.add_segment(200, -1.0f);
+		//track.add_segment(10, 0);
 
 		mountain.add_sine(0.5f);
 		mountain.add_sine(2);
@@ -145,6 +186,13 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
+		if (gameover) {
+			fElapsedTime = 0;
+		}
+
+		// --------------UPDATING---------------
+		lapManager.total_time += fElapsedTime;
+
 		if (GetKey(olc::W).bHeld) {
 			car.speed += 2.0f * fElapsedTime;
 		}
@@ -176,6 +224,16 @@ public:
 		float curvature_diff = (target_curvature - track.display_curvature) * car.speed * fElapsedTime;
 		track.display_curvature += curvature_diff;
 		track.game_curvature += track.display_curvature * fElapsedTime * car.speed;
+
+		if (track.ended_lap()) {
+			//TODO: Special drawing
+			lapManager.set();
+			if (lapManager.current_lap == 5) {
+				gameover = true;
+			}
+		}
+
+		// --------------DRAWING---------------
 
 		// Draw Sky
 		for (int x = 0; x < ScreenWidth(); x++) {
@@ -261,8 +319,15 @@ public:
 		DrawSprite(olc::vi2d(car_pos, ScreenHeight() - sprite->height - 25), sprite);
 		SetPixelMode(olc::Pixel::Mode::NORMAL);
 
-		std::string str = std::format("Distance travelled: {}\nCar cuvature: {}\nTrack curvature: {}", car.travelled, car.acc_curvature, track.game_curvature);
-		DrawString(olc::vi2d(0, 0), str);
+		std::string debug_str = std::format("Distance travelled: {}\nCar cuvature: {}\nTrack curvature: {}", car.travelled, car.acc_curvature, track.game_curvature);
+		DrawString(olc::vi2d(0, 0), debug_str);
+
+		DrawString(olc::vi2d(10, 40), lapManager.str());
+
+		if (gameover) {
+			DrawString(olc::vi2d(ScreenWidth() / 2 - 180, ScreenHeight() / 2 - 100), "GAME OVER", olc::WHITE, 5U);
+		}
+		
 
 		return true;
 	}
