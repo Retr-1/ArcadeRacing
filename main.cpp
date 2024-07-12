@@ -58,8 +58,8 @@ public:
 	int current_seg = 0;
 	float seg_sum = 0;
 	const float assimilate = 40;
-	float acc_curvature = 0;
-	float track_curvature = 0;
+	float display_curvature = 0;
+	float game_curvature = 0;
 
 	void add_segment(float length, float curvature) {
 		segments.push_back({ length, curvature });
@@ -79,7 +79,7 @@ public:
 			current_seg++;
 			if (current_seg == segments.size()) {
 				current_seg = 0;
-				seg_sum = 0;
+				//seg_sum = 0;
 			}
 			return segments[current_seg].curvature;
 		}
@@ -119,6 +119,10 @@ public:
 		if (GetKey(olc::W).bHeld) {
 			car.speed += 2.0f * fElapsedTime;
 		}
+
+		if (abs(car.acc_curvature - track.game_curvature) > 0.8f) {
+			car.speed -= 5.0f * fElapsedTime;
+		}
 		else {
 			car.speed -= 1.0f * fElapsedTime;
 		}
@@ -140,9 +144,9 @@ public:
 		car.travelled += car.speed * fElapsedTime * 70.0f;
 
 		float target_curvature = track.get_curvature(car.travelled);
-		float curvature_diff = (target_curvature - track.acc_curvature) * car.speed * fElapsedTime;
-		track.acc_curvature += curvature_diff;
-		track.track_curvature += track.acc_curvature * fElapsedTime * car.speed;
+		float curvature_diff = (target_curvature - track.display_curvature) * car.speed * fElapsedTime;
+		track.display_curvature += curvature_diff;
+		track.game_curvature += track.display_curvature * fElapsedTime * car.speed;
 
 
 		for (int y = ScreenHeight() / 2; y < ScreenHeight(); y++) {
@@ -155,7 +159,7 @@ public:
 			//int grass_width = ScreenWidth() - track_width - edge_width * 2;
 			int h_track_width = track_width / 2;
 
-			int offset = pow(1.0f - perspective, 3) * track.acc_curvature * ScreenWidth();
+			int offset = pow(1.0f - perspective, 3) * track.display_curvature * ScreenWidth();
 			int midpoint = ScreenWidth() / 2 + offset;
 
 			/*int p1 = grass_width / 2;
@@ -196,7 +200,7 @@ public:
 		}
 
 		
-		int car_pos = ScreenWidth() / 2 + (car.acc_curvature - track.track_curvature) * ScreenWidth() / 2 - car.formula_straight.get()->width/2;
+		int car_pos = ScreenWidth() / 2 + (car.acc_curvature - track.game_curvature) * ScreenWidth() / 2 - car.formula_straight.get()->width/2;
 		SetPixelMode(olc::Pixel::Mode::MASK);
 		DrawSprite(olc::vi2d(car_pos, 400), car.formula_straight.get());
 		SetPixelMode(olc::Pixel::Mode::NORMAL);
